@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ProSight Analytics | TIC III</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080D;
+  --bg2:#0E1018;
+  --bg3:#151722;
+  --bg4:#1C1F2E;
+  --border:#ffffff12;
+  --border2:#ffffff22;
+  --amber:#F59E0B;
+  --amber2:#FBBF24;
+  --amber-dim:#F59E0B22;
+  --text:#E8EAF0;
+  --text2:#9095A8;
+  --text3:#555A6E;
+  --green:#10B981;
+  --red:#EF4444;
+  --blue:#3B82F6;
+  --radius:14px;
+  --radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* MESH BG */
+.mesh{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.mesh::before{content:'';position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,#F59E0B18 0%,transparent 70%);top:-200px;right:-200px;animation:drift 20s ease-in-out infinite alternate}
+.mesh::after{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#3B82F615 0%,transparent 70%);bottom:-100px;left:-100px;animation:drift 25s ease-in-out infinite alternate-reverse}
+.mesh-mid{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,#8B5CF615 0%,transparent 70%);top:40%;left:30%;animation:drift 18s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,30px) scale(1.1)}}
+
+/* NOISE */
+.noise{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+
+.wrapper{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:24px 20px 60px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px;backdrop-filter:blur(20px)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-logo{width:42px;height:42px;background:linear-gradient(135deg,#1E3A5F,#0F2040);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid var(--amber)44;box-shadow:0 0 20px var(--amber)22}
+.brand-logo svg{width:26px;height:26px}
+.brand-name{font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.brand-sub{font-size:.72rem;color:var(--text2);font-family:'DM Mono',monospace;letter-spacing:.05em;margin-top:1px}
+.live-badge{display:flex;align-items:center;gap:8px;padding:7px 16px;background:var(--amber-dim);border:1px solid var(--amber)44;border-radius:50px;font-size:.72rem;color:var(--amber2);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.live-dot{width:6px;height:6px;background:var(--amber);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* WIZARD CARD */
+.wizard{background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+
+/* PROGRESS */
+.progress-area{padding:28px 32px 24px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.prog-label{font-size:.75rem;color:var(--text2);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+.prog-counter{font-size:.75rem;font-family:'DM Mono',monospace;color:var(--amber)}
+.prog-track{height:3px;background:var(--border2);border-radius:99px;overflow:hidden;margin-bottom:20px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1);width:20%}
+.step-dots{display:flex;align-items:center;gap:0}
+.step-dot{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default;position:relative}
+.dot-circle{width:34px;height:34px;border-radius:50%;border:2px solid var(--border2);background:var(--bg4);display:flex;align-items:center;justify-content:center;transition:all .3s;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text3)}
+.dot-circle svg{width:14px;height:14px;display:none}
+.step-dot.done .dot-circle{border-color:var(--amber);background:var(--amber)22;color:var(--amber)}
+.step-dot.done .dot-circle svg{display:block}
+.step-dot.done .dot-circle span{display:none}
+.step-dot.active .dot-circle{border-color:var(--amber);background:var(--amber);color:var(--bg);box-shadow:0 0 16px var(--amber)55}
+.step-dot.active .dot-circle span{color:var(--bg)}
+.dot-label{font-size:.65rem;color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap;transition:color .3s}
+.step-dot.active .dot-label,.step-dot.done .dot-label{color:var(--amber)}
+.dot-line{flex:1;height:2px;background:var(--border);margin:0 6px;margin-bottom:22px;transition:background .3s;min-width:20px}
+.dot-line.done{background:var(--amber)55}
+
+/* STEP PANELS */
+.steps-container{padding:32px}
+.step-panel{display:none;animation:fadeUp .35s ease}
+.step-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.step-header{display:flex;align-items:center;gap:16px;margin-bottom:28px}
+.step-num{font-size:3rem;font-weight:700;color:var(--border2);font-family:'DM Mono',monospace;line-height:1;letter-spacing:-.05em}
+.step-title{font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.step-desc{font-size:.85rem;color:var(--text2);margin-top:4px}
+
+/* CHOICE CARDS */
+.choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.choice-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px 18px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.choice-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--amber)08,transparent);opacity:0;transition:opacity .25s}
+.choice-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.choice-card:hover::before{opacity:1}
+.choice-card.selected{border-color:var(--amber);background:var(--amber-dim)}
+.choice-card.selected::before{opacity:1}
+.choice-icon{font-size:2rem;margin-bottom:10px}
+.choice-label{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:4px}
+.choice-hint{font-size:.75rem;color:var(--text2)}
+.check-badge{position:absolute;top:10px;right:10px;width:20px;height:20px;background:var(--amber);border-radius:50%;display:none;align-items:center;justify-content:center}
+.choice-card.selected .check-badge{display:flex}
+.check-badge svg{width:11px;height:11px;stroke:var(--bg);stroke-width:2.5}
+
+.val-msg{font-size:.78rem;color:#EF444488;display:none;padding:8px 12px;background:#EF444411;border-radius:var(--radius-sm);border:1px solid #EF444422}
+.val-msg.show{display:block}
+
+/* TABLE */
+.table-ctx{padding:10px 16px;background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px;font-size:.78rem;color:var(--amber);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.table-scroll{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{background:var(--bg4);padding:12px 14px;text-align:left;font-size:.7rem;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg3)}
+tbody tr.totals-row td{background:var(--bg4);font-weight:600;color:var(--amber);font-family:'DM Mono',monospace;font-size:.78rem}
+input[type=number]{background:transparent;border:none;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:.83rem;width:100%;outline:none;padding:2px 0}
+input[type=number]::-webkit-inner-spin-button{opacity:.3}
+input[type=number]:focus{color:var(--amber2)}
+.table-hint{font-size:.75rem;color:var(--text3);margin-top:12px;padding:0 2px}
+
+/* LOADING OVERLAY */
+.loading-overlay{position:fixed;inset:0;z-index:100;background:var(--bg)ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;backdrop-filter:blur(10px)}
+.loading-overlay.hidden{display:none}
+.loading-spinner{width:56px;height:56px;border:3px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:.85rem;color:var(--text2);font-family:'DM Mono',monospace;letter-spacing:.06em}
+.loading-bar-wrap{width:240px;height:3px;background:var(--border2);border-radius:99px;overflow:hidden}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));border-radius:99px;width:0;animation:loadBar 1.5s ease-out forwards}
+@keyframes loadBar{0%{width:0}60%{width:80%}100%{width:100%}}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+.kpi-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:transform .2s}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--amber)}
+.kpi-card.green::after{background:var(--green)}
+.kpi-card.red::after{background:var(--red)}
+.kpi-card.blue::after{background:var(--blue)}
+.kpi-label{font-size:.68rem;color:var(--text2);font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+.kpi-value{font-size:1.9rem;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);letter-spacing:-.03em;line-height:1}
+.kpi-value.amber{color:var(--amber)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.red{color:var(--red)}
+.kpi-sub{font-size:.72rem;color:var(--text3);margin-top:6px}
+.kpi-tooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;font-size:.72rem;color:var(--text2);white-space:nowrap;z-index:10;pointer-events:none}
+.kpi-card:hover .kpi-tooltip{display:block}
+
+/* GAUGE */
+.gauge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+.gauge-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.gauge-title{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;text-align:center}
+.gauge-svg{overflow:visible}
+.gauge-pct{font-size:1rem;font-weight:700;font-family:'DM Mono',monospace;fill:var(--text)}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+@media(max-width:640px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.chart-title{font-size:.85rem;font-weight:600;color:var(--text)}
+.chart-badge{padding:3px 10px;border-radius:99px;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.05em}
+.chart-badge.bar{background:var(--amber)22;color:var(--amber2)}
+.chart-badge.line{background:#3B82F622;color:#60A5FA}
+.chart-badge.radar{background:#8B5CF622;color:#A78BFA}
+.chart-wrap{position:relative;height:180px}
+
+/* TENDENCIA */
+.tendency-block{padding:24px 28px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:28px;display:flex;align-items:center;gap:24px}
+.tendency-block.pos{border-color:var(--green)44;background:linear-gradient(135deg,#10B98118,transparent)}
+.tendency-block.neg{border-color:var(--red)44;background:linear-gradient(135deg,#EF444418,transparent)}
+.tendency-block.neutral{border-color:var(--amber)44;background:linear-gradient(135deg,var(--amber-dim),transparent)}
+.tendency-icon{font-size:3rem;line-height:1}
+.tendency-label{font-size:1.5rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.tendency-sub{font-size:.82rem;color:var(--text2);margin-top:4px}
+
+/* RANKING */
+.ranking-table{width:100%;border-collapse:collapse;margin-bottom:28px}
+.ranking-table th{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+.ranking-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:.83rem;color:var(--text)}
+.ranking-table tr:last-child td{border-bottom:none}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:.7rem;font-weight:700;font-family:'DM Mono',monospace}
+.rank-badge.gold{background:var(--amber)33;color:var(--amber2)}
+.rank-badge.silver{background:#9CA3AF22;color:#9CA3AF}
+.rank-badge.bronze{background:#CD7C3122;color:#CD7C31}
+.rank-badge.other{background:var(--border);color:var(--text3)}
+.perf-badge{padding:3px 10px;border-radius:99px;font-size:.68rem;font-family:'DM Mono',monospace}
+.perf-badge.high{background:#10B98122;color:var(--green)}
+.perf-badge.mid{background:var(--amber-dim);color:var(--amber2)}
+.perf-badge.low{background:#EF444422;color:var(--red)}
+
+/* INSIGHTS */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px}
+.insight-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.insight-icon{font-size:1.5rem;margin-bottom:8px}
+.insight-title{font-size:.7rem;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.insight-text{font-size:.83rem;color:var(--text);line-height:1.5}
+
+/* CONFIG SUMMARY */
+.config-summary{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:28px}
+.cfg-title{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+.cfg-grid{display:flex;flex-wrap:wrap;gap:20px}
+.cfg-item{display:flex;flex-direction:column;gap:3px}
+.cfg-key{font-size:.68rem;color:var(--text3);font-family:'DM Mono',monospace}
+.cfg-val{font-size:.83rem;font-weight:600;color:var(--amber2)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--radius-sm);font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;letter-spacing:.01em}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn:disabled{opacity:.35;pointer-events:none}
+.btn-amber{background:var(--amber);color:var(--bg);box-shadow:0 0 20px var(--amber)33}
+.btn-amber:hover{background:var(--amber2);box-shadow:0 0 28px var(--amber)55}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-outline:hover{border-color:var(--amber);color:var(--amber)}
+.btn-ghost{background:var(--bg4);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2)}
+.btn-green{background:#10B981;color:#fff;box-shadow:0 0 16px #10B98133}
+.btn-green:hover{background:#059669}
+.btn-calc-wrap{display:flex;justify-content:center;margin-top:24px}
+
+/* NAV */
+.wizard-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-top:1px solid var(--border);background:var(--bg3)}
+.nav-info{font-size:.75rem;color:var(--text3);font-family:'DM Mono',monospace}
+
+/* ACTION ROW */
+.action-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:28px}
+
+/* SECTION DIVIDER */
+.section-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.section-divider-line{flex:1;height:1px;background:var(--border)}
+.section-divider-label{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+
+/* FOOTER */
+footer{text-align:center;padding:28px 0 0;font-size:.73rem;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.04em}
+footer span+span::before{content:'·';margin:0 8px}
+
+/* CSV icon animation */
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.btn-csv:active{animation:pop .2s ease}
+</style>
+</head>
+<body>
+
+<div class="mesh"><div class="mesh-mid"></div></div>
+<div class="noise"></div>
+
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="loading-spinner"></div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadBar"></div></div>
+  <div class="loading-text" id="loadingText">Procesando datos...</div>
+</div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 36 36" fill="none">
+          <path d="M8 26L14 18L19 22L26 12" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="26" cy="12" r="2.5" fill="#F59E0B"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">ProSight Analytics</div>
+        <div class="brand-sub">PERFORMANCE PLATFORM · TIC III</div>
+      </div>
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Análisis en tiempo real
+    </div>
+  </header>
+
+  <!-- WIZARD -->
+  <div class="wizard">
+
+    <!-- PROGRESS -->
+    <div class="progress-area">
+      <div class="prog-top">
+        <span class="prog-label">Progreso del asistente</span>
+        <span class="prog-counter"><span id="stepNumTxt">1</span> / 5</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="step-dots" id="stepDots">
+        <div class="step-dot active" data-step="1">
+          <div class="dot-circle"><span>01</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="dot-label">Área</span>
+        </div>
+        <div class="dot-line" id="line-1"></div>
+        <div class="step-dot" data-step="2">
+          <div class="dot-circle"><span>02</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="dot-label">Periodo</span>
+        </div>
+        <div class="dot-line" id="line-2"></div>
+        <div class="step-dot" data-step="3">
+          <div class="dot-circle"><span>03</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="dot-label">Método</span>
+        </div>
+        <div class="dot-line" id="line-3"></div>
+        <div class="step-dot" data-step="4">
+          <div class="dot-circle"><span>04</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="dot-label">Datos</span>
+        </div>
+        <div class="dot-line" id="line-4"></div>
+        <div class="step-dot" data-step="5">
+          <div class="dot-circle"><span>05</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="dot-label">Dashboard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEPS -->
+    <div class="steps-container">
+
+      <!-- PASO 1 -->
+      <div class="step-panel active" id="step-1">
+        <div class="step-header">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-title">Área Organizacional</div>
+            <div class="step-desc">Selecciona el área que deseas evaluar</div>
+          </div>
+        </div>
+        <div class="choice-grid" id="areaGrid">
+          <div class="choice-card" data-value="ventas">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📈</div>
+            <div class="choice-label">Comercial / Ventas</div>
+            <div class="choice-hint">Ingresos, metas y conversión</div>
+          </div>
+          <div class="choice-card" data-value="produccion">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🏭</div>
+            <div class="choice-label">Producción / Operaciones</div>
+            <div class="choice-hint">Unidades, mermas y eficiencia</div>
+          </div>
+          <div class="choice-card" data-value="soporte">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🎧</div>
+            <div class="choice-label">Servicio al Cliente</div>
+            <div class="choice-hint">Tickets, resolución y NPS</div>
+          </div>
+          <div class="choice-card" data-value="rrhh">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">👥</div>
+            <div class="choice-label">Talento Humano / RRHH</div>
+            <div class="choice-hint">Capacitación, rotación y desempeño</div>
+          </div>
+          <div class="choice-card" data-value="finanzas">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">💰</div>
+            <div class="choice-label">Finanzas / Contabilidad</div>
+            <div class="choice-hint">Flujo de caja, ROI y presupuesto</div>
+          </div>
+          <div class="choice-card" data-value="ti">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🔧</div>
+            <div class="choice-label">Mantenimiento / TI</div>
+            <div class="choice-hint">Uptime, tickets e incidencias</div>
+          </div>
+          <div class="choice-card" data-value="logistica">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📦</div>
+            <div class="choice-label">Logística / Supply Chain</div>
+            <div class="choice-hint">Entregas, stock y lead time</div>
+          </div>
+          <div class="choice-card" data-value="marketing">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📣</div>
+            <div class="choice-label">Marketing / Growth</div>
+            <div class="choice-hint">Leads, CAC y conversiones</div>
+          </div>
+        </div>
+        <p class="val-msg" id="val-1">⚠ Selecciona un área para continuar.</p>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="step-panel" id="step-2">
+        <div class="step-header">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-title">Horizonte Temporal</div>
+            <div class="step-desc">Define la frecuencia del periodo de evaluación</div>
+          </div>
+        </div>
+        <div class="choice-grid" id="periodoGrid">
+          <div class="choice-card" data-value="diario">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📅</div>
+            <div class="choice-label">Diario</div>
+            <div class="choice-hint">7 días de análisis</div>
+          </div>
+          <div class="choice-card" data-value="semanal">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📆</div>
+            <div class="choice-label">Semanal</div>
+            <div class="choice-hint">4 semanas de análisis</div>
+          </div>
+          <div class="choice-card" data-value="quincenal">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🗒️</div>
+            <div class="choice-label">Quincenal</div>
+            <div class="choice-hint">6 quincenas de análisis</div>
+          </div>
+          <div class="choice-card" data-value="mensual">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🗓️</div>
+            <div class="choice-label">Mensual</div>
+            <div class="choice-hint">6 meses de análisis</div>
+          </div>
+          <div class="choice-card" data-value="bimestral">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📋</div>
+            <div class="choice-label">Bimestral</div>
+            <div class="choice-hint">6 bimestres de análisis</div>
+          </div>
+          <div class="choice-card" data-value="trimestral">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📊</div>
+            <div class="choice-label">Trimestral</div>
+            <div class="choice-hint">4 trimestres de análisis</div>
+          </div>
+          <div class="choice-card" data-value="semestral">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📈</div>
+            <div class="choice-label">Semestral</div>
+            <div class="choice-hint">2 semestres de análisis</div>
+          </div>
+          <div class="choice-card" data-value="anual">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🗺️</div>
+            <div class="choice-label">Anual</div>
+            <div class="choice-hint">5 años de análisis</div>
+          </div>
+        </div>
+        <p class="val-msg" id="val-2">⚠ Selecciona un periodo para continuar.</p>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-panel" id="step-3">
+        <div class="step-header">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-title">Método de Análisis</div>
+            <div class="step-desc">Elige el enfoque para medir la productividad del área</div>
+          </div>
+        </div>
+        <div class="choice-grid" id="metodoGrid">
+          <div class="choice-card" data-value="horas">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">⏱️</div>
+            <div class="choice-label">Eficiencia Horas‑Hombre</div>
+            <div class="choice-hint">Output vs horas trabajadas</div>
+          </div>
+          <div class="choice-card" data-value="calidad">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">✅</div>
+            <div class="choice-label">Calidad Operativa Neta</div>
+            <div class="choice-hint">Tasa de errores y rechazos</div>
+          </div>
+          <div class="choice-card" data-value="objetivos">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🎯</div>
+            <div class="choice-label">Cumplimiento de Objetivos</div>
+            <div class="choice-hint">Real vs meta establecida</div>
+          </div>
+          <div class="choice-card" data-value="kpi">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">📌</div>
+            <div class="choice-label">Índice KPI Compuesto</div>
+            <div class="choice-hint">Ponderación de múltiples KPIs</div>
+          </div>
+          <div class="choice-card" data-value="costo">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">💲</div>
+            <div class="choice-label">Productividad por Costo</div>
+            <div class="choice-hint">Output generado por unidad de costo</div>
+          </div>
+          <div class="choice-card" data-value="benchmark">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🏅</div>
+            <div class="choice-label">Benchmarking Interno</div>
+            <div class="choice-hint">Comparación entre periodos propios</div>
+          </div>
+          <div class="choice-card" data-value="satisfaccion">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">😊</div>
+            <div class="choice-label">Satisfacción y Clima</div>
+            <div class="choice-hint">Encuestas y NPS interno</div>
+          </div>
+          <div class="choice-card" data-value="riesgo">
+            <div class="check-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="choice-icon">🛡️</div>
+            <div class="choice-label">Análisis de Riesgo</div>
+            <div class="choice-hint">Probabilidad e impacto de fallos</div>
+          </div>
+        </div>
+        <p class="val-msg" id="val-3">⚠ Selecciona un método para continuar.</p>
+      </div>
+
+      <!-- PASO 4 -->
+      <div class="step-panel" id="step-4">
+        <div class="step-header">
+          <div class="step-num">04</div>
+          <div>
+            <div class="step-title">Ingreso de Datos</div>
+            <div class="step-desc">Completa la matriz generada según tu configuración</div>
+          </div>
+        </div>
+        <div class="table-ctx" id="tableCtx"></div>
+        <div class="table-scroll">
+          <table>
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+          </table>
+        </div>
+        <p class="table-hint">💡 Ingresa valores numéricos. Los campos vacíos se toman como 0. La columna "Meta" define el objetivo de referencia para calcular el cumplimiento.</p>
+        <div class="btn-calc-wrap">
+          <button class="btn btn-amber" id="btnCalc">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M3 10h14M10 3v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Calcular Resultados
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 5 -->
+      <div class="step-panel" id="step-5">
+        <div class="step-header">
+          <div class="step-num">05</div>
+          <div>
+            <div class="step-title">Dashboard de Resultados</div>
+            <div class="step-desc">Análisis completo de desempeño y productividad</div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Indicadores Clave</span><div class="section-divider-line"></div></div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <!-- GAUGES -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Cumplimiento vs Meta</span><div class="section-divider-line"></div></div>
+        <div class="gauge-grid" id="gaugeGrid"></div>
+
+        <!-- TENDENCIA -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Tendencia General</span><div class="section-divider-line"></div></div>
+        <div class="tendency-block" id="tendencyBlock"></div>
+
+        <!-- CHARTS -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Gráficos</span><div class="section-divider-line"></div></div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-hdr"><span class="chart-title">Rendimiento por Periodo</span><span class="chart-badge bar">Barras</span></div>
+            <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-hdr"><span class="chart-title">Evolución de Productividad</span><span class="chart-badge line">Línea</span></div>
+            <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
+          </div>
+        </div>
+
+        <!-- RANKING -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Ranking por Periodo</span><div class="section-divider-line"></div></div>
+        <div style="overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:28px">
+          <table class="ranking-table" id="rankingTable">
+            <thead><tr><th>Pos.</th><th>Periodo</th><th>Productividad</th><th>Vs. Promedio</th><th>Nivel</th></tr></thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+
+        <!-- INSIGHTS -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Insights Automáticos</span><div class="section-divider-line"></div></div>
+        <div class="insights-grid" id="insightsGrid"></div>
+
+        <!-- CONFIG SUMMARY -->
+        <div class="section-divider"><div class="section-divider-line"></div><span class="section-divider-label">Configuración del Análisis</span><div class="section-divider-line"></div></div>
+        <div class="config-summary" id="cfgSummary"></div>
+
+        <!-- ACTIONS -->
+        <div class="action-row">
+          <button class="btn btn-green btn-csv" id="btnCSV">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2M7 10l3 3 3-3M10 3v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-outline" id="btnPrint">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M5 7V4h10v3M5 14H4a1 1 0 01-1-1V9a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-1M6 14h8v3H6v-3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Imprimir / PDF
+          </button>
+          <button class="btn btn-ghost" id="btnRestart">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 101.8 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14V10H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Nuevo Análisis
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /steps-container -->
+
+    <!-- NAV -->
+    <div class="wizard-nav">
+      <button class="btn btn-outline" id="btnBack" disabled>
+        <svg viewBox="0 0 20 20" fill="none"><path d="M12 5L7 10L12 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Atrás
+      </button>
+      <span class="nav-info" id="navInfo">Paso 1 · Área Organizacional</span>
+      <button class="btn btn-amber" id="btnNext" disabled>
+        Siguiente
+        <svg viewBox="0 0 20 20" fill="none"><path d="M8 5L13 10L8 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div><!-- /wizard -->
+
+  <footer>
+    <span>ProSight Analytics</span>
+    <span>Desempeño y Productividad por Área</span>
+    <span>TIC III © 2025</span>
+  </footer>
+</div>
+
+<style>
+@media print{
+  .mesh,.noise,.wizard-nav,.action-row,footer{display:none!important}
+  body{background:#fff!important;color:#000!important}
+  .wizard{border:none!important;background:#fff!important}
+  .progress-area{display:none!important}
+  .step-panel{display:none!important}
+  #step-5{display:block!important}
+  .kpi-value{color:#000!important}
+  .chart-card,.kpi-card,.insight-card,.gauge-card,.config-summary{background:#f5f5f5!important;border:1px solid #ccc!important}
+}
+</style>
+
+<script>
+const AREAS={
+  ventas:{label:'Comercial / Ventas',indicadores:['Ingresos Netos','Nuevos Clientes','Tasa de Conversión','Pedidos Procesados']},
+  produccion:{label:'Producción / Operaciones',indicadores:['Unidades Producidas','Mermas (%)','Eficiencia Línea','Tiempo Ciclo (min)']},
+  soporte:{label:'Servicio al Cliente',indicadores:['Tickets Abiertos','Tickets Resueltos','Tiempo Respuesta (h)','NPS']},
+  rrhh:{label:'Talento Humano / RRHH',indicadores:['Empleados Activos','Capacitaciones','Rotación (%)','Desempeño Prom.']},
+  finanzas:{label:'Finanzas / Contabilidad',indicadores:['Ingresos Totales','Egresos Totales','ROI (%)','Presupuesto Ejecutado']},
+  ti:{label:'Mantenimiento / TI',indicadores:['Uptime (%)','Tickets TI','Incidencias','Tiempo Resolución (h)']},
+  logistica:{label:'Logística / Supply Chain',indicadores:['Entregas a Tiempo','Stock Promedio','Lead Time (días)','Devoluciones']},
+  marketing:{label:'Marketing / Growth',indicadores:['Leads Generados','Costo por Lead','Conversiones','Alcance Total']}
+};
+const PERIODOS={
+  diario:    {label:'Diario',    cols:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']},
+  semanal:   {label:'Semanal',   cols:['Sem 1','Sem 2','Sem 3','Sem 4']},
+  quincenal: {label:'Quincenal', cols:['Q1-Ene','Q2-Ene','Q1-Feb','Q2-Feb','Q1-Mar','Q2-Mar']},
+  mensual:   {label:'Mensual',   cols:['Ene','Feb','Mar','Abr','May','Jun']},
+  bimestral: {label:'Bimestral', cols:['Bim 1','Bim 2','Bim 3','Bim 4','Bim 5','Bim 6']},
+  trimestral:{label:'Trimestral',cols:['Q1','Q2','Q3','Q4']},
+  semestral: {label:'Semestral', cols:['S1','S2']},
+  anual:     {label:'Anual',     cols:['2021','2022','2023','2024','2025']}
+};
+const METODOS={
+  horas:       {label:'Eficiencia Horas-Hombre',    desc:'Output vs horas trabajadas'},
+  calidad:     {label:'Calidad Operativa Neta',      desc:'Tasa de errores y rechazos'},
+  objetivos:   {label:'Cumplimiento de Objetivos',   desc:'Real vs meta establecida'},
+  kpi:         {label:'Índice KPI Compuesto',        desc:'Ponderación de múltiples KPIs'},
+  costo:       {label:'Productividad por Costo',     desc:'Output generado por unidad de costo'},
+  benchmark:   {label:'Benchmarking Interno',        desc:'Comparación entre periodos propios'},
+  satisfaccion:{label:'Satisfacción y Clima',        desc:'Encuestas y NPS interno'},
+  riesgo:      {label:'Análisis de Riesgo',          desc:'Probabilidad e impacto de fallos'}
+};
+const STEP_NAMES=['Área Organizacional','Horizonte Temporal','Método de Análisis','Ingreso de Datos','Dashboard'];
+
+let state={step:1,area:null,periodo:null,metodo:null};
+let chartBarInst=null,chartLineInst=null;
+
+// SELECCIÓN DE CARDS
+function setupGrid(gridId,stateKey,nextBtn){
+  const grid=document.getElementById(gridId);
+  grid.querySelectorAll('.choice-card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      grid.querySelectorAll('.choice-card').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+      state[stateKey]=c.dataset.value;
+      document.getElementById('btnNext').disabled=false;
+    });
+  });
+}
+setupGrid('areaGrid','area');
+setupGrid('periodoGrid','periodo');
+setupGrid('metodoGrid','metodo');
+
+// PROGRESS
+function updateProgress(){
+  const s=state.step;
+  document.getElementById('stepNumTxt').textContent=s;
+  document.getElementById('progFill').style.width=(s/5*100)+'%';
+  document.getElementById('navInfo').textContent=`Paso ${s} · ${STEP_NAMES[s-1]}`;
+  document.querySelectorAll('.step-dot').forEach(d=>{
+    const ds=+d.dataset.step;
+    d.classList.remove('active','done');
+    if(ds===s) d.classList.add('active');
+    else if(ds<s) d.classList.add('done');
+  });
+  for(let i=1;i<=4;i++){
+    const l=document.getElementById('line-'+i);
+    l.classList.toggle('done',i<s);
+  }
+  document.getElementById('btnBack').disabled=s===1;
+  const nn=document.getElementById('btnNext');
+  if(s===5){nn.style.display='none';}
+  else{nn.style.display='';nn.disabled=true;}
+}
+
+// NAV
+document.getElementById('btnNext').addEventListener('click',()=>{
+  const s=state.step;
+  document.getElementById('val-'+s)?.classList.remove('show');
+  if(s===3) buildTable();
+  state.step++;
+  showStep(state.step);
+});
+document.getElementById('btnBack').addEventListener('click',()=>{
+  state.step--;
+  showStep(state.step);
+});
+
+function showStep(n){
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  updateProgress();
+  const nn=document.getElementById('btnNext');
+  if(n===1&&state.area) nn.disabled=false;
+  else if(n===2&&state.periodo) nn.disabled=false;
+  else if(n===3&&state.metodo) nn.disabled=false;
+  else if(n===4) nn.disabled=false;
+}
+
+// TABLA
+function buildTable(){
+  const area=AREAS[state.area];
+  const periodo=PERIODOS[state.periodo];
+  const cols=periodo.cols;
+  // context bar
+  document.getElementById('tableCtx').textContent=
+    `Área: ${area.label} · Periodo: ${periodo.label} · Método: ${METODOS[state.metodo].label}`;
+  // head
+  const thead=document.getElementById('tHead');
+  thead.innerHTML='<tr><th>Indicador</th>'+cols.map(c=>`<th>${c}</th>`).join('')+'<th>Meta</th></tr>';
+  // body
+  const tbody=document.getElementById('tBody');
+  tbody.innerHTML=area.indicadores.map((ind,i)=>`
+    <tr>
+      <td style="font-weight:500;color:var(--text2)">${ind}</td>
+      ${cols.map((_,j)=>`<td><input type="number" step="any" min="0" id="cell-${i}-${j}" placeholder="0"/></td>`).join('')}
+      <td><input type="number" step="any" min="0" id="meta-${i}" placeholder="100"/></td>
+    </tr>`).join('');
+  // Load from localStorage
+  loadFromStorage();
+  // Save on change
+  tbody.addEventListener('input',saveToStorage);
+}
+
+function saveToStorage(){
+  const area=AREAS[state.area];
+  const cols=PERIODOS[state.periodo].cols;
+  const rows=area.indicadores.length;
+  const data={};
+  for(let i=0;i<rows;i++){
+    data[`meta-${i}`]=document.getElementById(`meta-${i}`)?.value||'';
+    for(let j=0;j<cols.length;j++){
+      data[`cell-${i}-${j}`]=document.getElementById(`cell-${i}-${j}`)?.value||'';
+    }
+  }
+  try{localStorage.setItem('prosight_data',JSON.stringify({config:{area:state.area,periodo:state.periodo,metodo:state.metodo},data}));}catch(e){}
+}
+
+function loadFromStorage(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('prosight_data')||'null');
+    if(!saved||saved.config.area!==state.area||saved.config.periodo!==state.periodo||saved.config.metodo!==state.metodo) return;
+    Object.entries(saved.data).forEach(([k,v])=>{const el=document.getElementById(k);if(el) el.value=v;});
+  }catch(e){}
+}
+
+// CALCULAR
+document.getElementById('btnCalc').addEventListener('click',()=>{
+  showLoading(()=>buildDashboard());
+});
+
+function showLoading(cb){
+  const ov=document.getElementById('loadingOverlay');
+  const msgs=['Analizando datos...','Calculando KPIs...','Generando gráficos...','Preparando dashboard...'];
+  let mi=0;
+  ov.classList.remove('hidden');
+  document.getElementById('loadBar').style.animation='none';
+  setTimeout(()=>{ document.getElementById('loadBar').style.animation='loadBar 1.5s ease-out forwards'; },10);
+  const iv=setInterval(()=>{
+    mi=(mi+1)%msgs.length;
+    document.getElementById('loadingText').textContent=msgs[mi];
+  },400);
+  setTimeout(()=>{
+    clearInterval(iv);
+    ov.classList.add('hidden');
+    cb();
+    state.step=5;
+    showStep(5);
+  },1600);
+}
+
+function buildDashboard(){
+  const area=AREAS[state.area];
+  const periodo=PERIODOS[state.periodo];
+  const cols=periodo.cols;
+  const rows=area.indicadores.length;
+
+  // Recoger datos
+  const data=[];
+  const metas=[];
+  for(let i=0;i<rows;i++){
+    const row=[];
+    for(let j=0;j<cols.length;j++){
+      row.push(parseFloat(document.getElementById(`cell-${i}-${j}`)?.value)||0);
+    }
+    data.push(row);
+    metas.push(parseFloat(document.getElementById(`meta-${i}`)?.value)||100);
+  }
+
+  // Productividad por periodo (promedio normalizado de todos los indicadores)
+  const prodPorPeriodo=cols.map((_,j)=>{
+    const vals=data.map((row,i)=>{
+      const meta=metas[i]||1;
+      return Math.min((row[j]/meta)*100,200);
+    });
+    return parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1));
+  });
+
+  const promedio=parseFloat((prodPorPeriodo.reduce((a,b)=>a+b,0)/prodPorPeriodo.length).toFixed(1));
+  const maxVal=Math.max(...prodPorPeriodo);
+  const minVal=Math.min(...prodPorPeriodo);
+  const maxIdx=prodPorPeriodo.indexOf(maxVal);
+  const minIdx=prodPorPeriodo.indexOf(minVal);
+  const variacion=parseFloat((maxVal-minVal).toFixed(1));
+  const tendencia=prodPorPeriodo[prodPorPeriodo.length-1]-prodPorPeriodo[0];
+
+  // Promedio por indicador
+  const promIndicador=data.map(row=>parseFloat((row.reduce((a,b)=>a+b,0)/row.length).toFixed(1)));
+  const cumplimiento=promIndicador.map((v,i)=>parseFloat(Math.min((v/(metas[i]||1))*100,200).toFixed(1)));
+
+  // KPIs
+  const kpiGrid=document.getElementById('kpiGrid');
+  kpiGrid.innerHTML=[
+    {label:'Productividad Promedio',val:promedio.toFixed(1)+'%',sub:'Todos los periodos',color:'amber',tip:'Promedio ponderado del cumplimiento vs meta en todos los periodos'},
+    {label:'Mejor Periodo',val:cols[maxIdx],sub:maxVal.toFixed(1)+'% productividad',color:'green',tip:`El periodo con mayor rendimiento fue ${cols[maxIdx]}`},
+    {label:'Peor Periodo',val:cols[minIdx],sub:minVal.toFixed(1)+'% productividad',color:'red',tip:`El periodo con menor rendimiento fue ${cols[minIdx]}`},
+    {label:'Variación Máx.',val:variacion.toFixed(1)+'pt',sub:'Entre mejor y peor',color:'',tip:'Diferencia en puntos entre el periodo más alto y el más bajo'},
+  ].map(k=>`
+    <div class="kpi-card ${k.color}">
+      <div class="kpi-tooltip">${k.tip}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.color}">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // GAUGES SVG
+  const gaugeGrid=document.getElementById('gaugeGrid');
+  gaugeGrid.innerHTML=area.indicadores.map((ind,i)=>{
+    const pct=Math.min(cumplimiento[i],100);
+    const r=38,cx=50,cy=55,stroke=8;
+    const circ=2*Math.PI*r;
+    const dashArr=circ*0.75;
+    const dashOff=dashArr-(dashArr*(pct/100));
+    const color=pct>=80?'#10B981':pct>=50?'#F59E0B':'#EF4444';
+    return `<div class="gauge-card">
+      <svg class="gauge-svg" width="100" height="70" viewBox="0 0 100 70">
+        <path d="M 15 58 A 38 38 0 1 1 85 58" fill="none" stroke="#1C1F2E" stroke-width="${stroke}" stroke-linecap="round"/>
+        <path d="M 15 58 A 38 38 0 1 1 85 58" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${dashArr.toFixed(2)}" stroke-dashoffset="${dashOff.toFixed(2)}"
+          transform="rotate(0,${cx},${cy})" style="transition:stroke-dashoffset 1s ease"/>
+        <text x="50" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="${color}" font-family="DM Mono,monospace">${pct.toFixed(0)}%</text>
+      </svg>
+      <div class="gauge-title">${ind}</div>
+    </div>`;
+  }).join('');
+
+  // TENDENCIA
+  const tb=document.getElementById('tendencyBlock');
+  tb.className='tendency-block';
+  let tIcon,tLabel,tSub,tClass;
+  if(tendencia>5){tIcon='📈';tLabel='Tendencia POSITIVA';tSub=`Crecimiento de +${tendencia.toFixed(1)} puntos entre primer y último periodo`;tClass='pos';}
+  else if(tendencia<-5){tIcon='📉';tLabel='Tendencia NEGATIVA';tSub=`Caída de ${Math.abs(tendencia).toFixed(1)} puntos entre primer y último periodo`;tClass='neg';}
+  else{tIcon='➡️';tLabel='Tendencia ESTABLE';tSub=`Variación de ${tendencia.toFixed(1)} puntos — rendimiento relativamente constante`;tClass='neutral';}
+  tb.classList.add(tClass);
+  tb.innerHTML=`<div class="tendency-icon">${tIcon}</div><div><div class="tendency-label">${tLabel}</div><div class="tendency-sub">${tSub}</div></div>`;
+
+  // CHARTS
+  const chartColors={bar:'rgba(245,158,11,0.8)',barBorder:'#F59E0B',line:'#60A5FA'};
+  const gridColor='rgba(255,255,255,0.06)';
+  const tickColor='rgba(255,255,255,0.35)';
+  if(chartBarInst) chartBarInst.destroy();
+  if(chartLineInst) chartLineInst.destroy();
+  chartBarInst=new Chart(document.getElementById('chartBar'),{
+    type:'bar',
+    data:{labels:cols,datasets:[{label:'Productividad (%)',data:prodPorPeriodo,backgroundColor:chartColors.bar,borderColor:chartColors.barBorder,borderWidth:1.5,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(1)}%`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:tickColor,font:{size:11},callback:v=>v+'%'},grid:{color:gridColor}}}}
+  });
+  chartLineInst=new Chart(document.getElementById('chartLine'),{
+    type:'line',
+    data:{labels:cols,datasets:[{label:'Evolución',data:prodPorPeriodo,borderColor:chartColors.line,backgroundColor:'rgba(96,165,250,0.1)',borderWidth:2,pointBackgroundColor:chartColors.line,pointRadius:4,fill:true,tension:.35}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(1)}%`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:tickColor,font:{size:11},callback:v=>v+'%'},grid:{color:gridColor}}}}
+  });
+
+  // RANKING
+  const sorted=[...prodPorPeriodo.map((v,i)=>({col:cols[i],val:v}))].sort((a,b)=>b.val-a.val);
+  const rankBody=document.getElementById('rankingBody');
+  rankBody.innerHTML=sorted.map((r,i)=>{
+    const badgeClass=i===0?'gold':i===1?'silver':i===2?'bronze':'other';
+    const badgeNum=['🥇','🥈','🥉'][i]||i+1;
+    const diff=(r.val-promedio).toFixed(1);
+    const diffStr=(diff>0?'+':'')+diff+'%';
+    const diffColor=diff>0?'var(--green)':diff<0?'var(--red)':'var(--text2)';
+    const perfLevel=r.val>=80?'high':r.val>=50?'mid':'low';
+    const perfLabel=r.val>=80?'Alto':r.val>=50?'Medio':'Bajo';
+    return `<tr>
+      <td><span class="rank-badge ${badgeClass}">${badgeNum}</span></td>
+      <td>${r.col}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:600">${r.val.toFixed(1)}%</td>
+      <td style="color:${diffColor};font-family:'DM Mono',monospace">${diffStr}</td>
+      <td><span class="perf-badge ${perfLevel}">${perfLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  // INSIGHTS
+  const ig=document.getElementById('insightsGrid');
+  const recMet=
+    state.metodo==='objetivos'   ?'Revisa los indicadores con cumplimiento < 80% y ajusta las metas para el próximo ciclo.':
+    state.metodo==='calidad'     ?'Implementa revisiones de calidad enfocadas en los periodos de bajo rendimiento.':
+    state.metodo==='horas'       ?'Considera redistribuir la carga de trabajo en los periodos de baja eficiencia.':
+    state.metodo==='kpi'         ?'Pondera con mayor peso los KPIs críticos que impactan directamente el resultado final.':
+    state.metodo==='costo'       ?'Identifica los periodos con mayor costo-por-unidad y analiza causas de ineficiencia.':
+    state.metodo==='benchmark'   ?'Usa el mejor periodo como referencia interna y define ese nivel como nueva meta base.':
+    state.metodo==='satisfaccion'?'Prioriza acciones de clima laboral en los periodos con menor índice de satisfacción.':
+    'Documenta los riesgos con mayor impacto y establece planes de mitigación para el siguiente ciclo.';
+  ig.innerHTML=[
+    {icon:'🏆',title:'Mejor desempeño',text:`El periodo <strong>${cols[maxIdx]}</strong> fue el más productivo con <strong>${maxVal.toFixed(1)}%</strong> de cumplimiento respecto a la meta.`},
+    {icon:'⚠️',title:'Atención requerida',text:`El periodo <strong>${cols[minIdx]}</strong> registró el menor desempeño con <strong>${minVal.toFixed(1)}%</strong>. Requiere análisis de causas.`},
+    {icon:'📐',title:'Variabilidad',text:`La variación máxima entre periodos fue de <strong>${variacion.toFixed(1)} puntos</strong>. ${variacion>20?'Alta dispersión — revisar consistencia operativa.':'Dispersión moderada — buen control del proceso.'}`},
+    {icon:'💡',title:'Recomendación',text:recMet},
+  ].map(ins=>`<div class="insight-card"><div class="insight-icon">${ins.icon}</div><div class="insight-title">${ins.title}</div><div class="insight-text">${ins.text}</div></div>`).join('');
+
+  // CONFIG SUMMARY
+  document.getElementById('cfgSummary').innerHTML=`
+    <div class="cfg-title">Resumen de Configuración</div>
+    <div class="cfg-grid">
+      <div class="cfg-item"><span class="cfg-key">Área</span><span class="cfg-val">${AREAS[state.area].label}</span></div>
+      <div class="cfg-item"><span class="cfg-key">Periodo</span><span class="cfg-val">${PERIODOS[state.periodo].label}</span></div>
+      <div class="cfg-item"><span class="cfg-key">Método</span><span class="cfg-val">${METODOS[state.metodo].label}</span></div>
+      <div class="cfg-item"><span class="cfg-key">Indicadores</span><span class="cfg-val">${rows} métricas</span></div>
+      <div class="cfg-item"><span class="cfg-key">Periodos</span><span class="cfg-val">${cols.length} puntos</span></div>
+      <div class="cfg-item"><span class="cfg-key">Generado</span><span class="cfg-val">${new Date().toLocaleDateString('es-BO',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+    </div>`;
+
+  // Store results for CSV
+  window._dashData={cols,area,periodo,data,metas,prodPorPeriodo,promedio,cumplimiento};
+}
+
+// CSV EXPORT
+document.getElementById('btnCSV').addEventListener('click',()=>{
+  const d=window._dashData;
+  if(!d) return;
+  const rows=[];
+  rows.push(['ProSight Analytics - Reporte de Productividad']);
+  rows.push([`Área: ${d.area.label}`,`Periodo: ${d.periodo.label}`,`Fecha: ${new Date().toLocaleDateString()}`]);
+  rows.push([]);
+  rows.push(['Indicador',...d.cols,'Meta','Promedio','Cumplimiento (%)']);
+  d.area.indicadores.forEach((ind,i)=>{
+    const avg=(d.data[i].reduce((a,b)=>a+b,0)/d.data[i].length).toFixed(2);
+    rows.push([ind,...d.data[i].map(v=>v.toFixed(2)),d.metas[i].toFixed(2),avg,d.cumplimiento[i].toFixed(1)+'%']);
+  });
+  rows.push([]);
+  rows.push(['Productividad por Periodo',...d.cols]);
+  rows.push(['%',...d.prodPorPeriodo.map(v=>v.toFixed(1)+'%')]);
+  rows.push([]);
+  rows.push(['Productividad Promedio',d.promedio.toFixed(1)+'%']);
+
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`prosight_${state.area}_${state.periodo}_${Date.now()}.csv`;
+  a.click();
+});
+
+// PRINT
+document.getElementById('btnPrint').addEventListener('click',()=>window.print());
+
+// RESTART
+document.getElementById('btnRestart').addEventListener('click',()=>{
+  state={step:1,area:null,periodo:null,metodo:null};
+  document.querySelectorAll('.choice-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('btnNext').style.display='';
+  try{localStorage.removeItem('prosight_data');}catch(e){}
+  showStep(1);
+  document.getElementById('btnNext').disabled=true;
+});
+
+updateProgress();
+</script>
+</body>
+</html>
